@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'org.github.tiokr'
-version '0.1'
+version '0.2'
 
 def currentOS = org.gradle.internal.os.OperatingSystem.current()
 def platform
@@ -30,6 +30,9 @@ dependencies {
     compile "org.openjfx:javafx-graphics:11:${platform}"
     compile "org.openjfx:javafx-controls:11:${platform}"
     compile "org.openjfx:javafx-fxml:11:${platform}"
+    compile group: 'org.codehaus.janino', name: 'janino', version: '3.0.7'
+    compile group: 'org.fxmisc.richtext', name: 'richtextfx', version: '0.10.6'
+    compile group: 'org.fxmisc.wellbehaved', name: 'wellbehavedfx', version: '0.3.3'
 }
 
 test {
@@ -48,8 +51,8 @@ jar {
         attributes "Main-Class": 'com.github.tiokr.javalive.Main'
     }
 
-    from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    from { (configurations.runtime).collect { it.isDirectory() ? it : zipTree(it) } } {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
     }
 }
 

@@ -9,8 +9,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
+<?import org.fxmisc.richtext.CodeArea?>
 
-<VBox prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.tiokr.javalive.MainController">
+<VBox prefHeight="600.0" prefWidth="1080.0" xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.tiokr.javalive.MainController">
   <children>
 <!--    <MenuBar VBox.vgrow="NEVER">-->
 <!--      <menus>-->
@@ -21,14 +22,11 @@
 <!--        </Menu>-->
 <!--      </menus>-->
 <!--    </MenuBar>-->
-    <SplitPane dividerPositions="0.5" focusTraversable="true" prefHeight="-1.0" prefWidth="-1.0" VBox.vgrow="ALWAYS">
+    <SplitPane dividerPositions="0.3432282003710575" focusTraversable="true" prefHeight="-1.0" prefWidth="-1.0" VBox.vgrow="ALWAYS">
       <items>
-            <TextArea fx:id="codeEditor" prefHeight="9999.0" prefWidth="9999.0" text="public class Main {&#10;    public static void main(String[] args) {&#10;         System.out.println(&quot;Hello World&quot;);&#10;    }&#10;}&#10;">
-               <font>
-                  <Font name="Courier New" size="12.0" />
-               </font>
-            </TextArea>
-            <TextArea fx:id="output" editable="false" prefHeight="9999.0" prefWidth="9999.0" promptText="Output will be displayed here" />
+            <CodeArea fx:id="codeEditor" prefHeight="9999.0" prefWidth="9999.0" text="public class Main {&#10;    public static void main(String[] args) {&#10;        System.out.println(&quot;Hello World&quot;);&#10;    }&#10;}&#10;">
+            </CodeArea>
+            <TextArea fx:id="output" editable="false" prefHeight="576.0" prefWidth="639.0" promptText="Output will be displayed here" />
       </items>
     </SplitPane>
     <HBox id="HBox" alignment="CENTER_LEFT" spacing="5.0" VBox.vgrow="NEVER">

@@ -6,14 +6,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.codehaus.janino.SimpleCompiler;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Consumer;
 
 public class LiveJava extends Application {
@@ -53,11 +54,16 @@ public class LiveJava extends Application {
 
         latestChangeId++;
         var currentChangeId = latestChangeId; // make sure only the last change updates the gui
+        var oldOut = System.out;
+        var oldErr = System.err;
         new Thread(() -> {
+            var errorCollector = new TextCollector();
             try {
+                System.setErr(new PrintStream(errorCollector));
                 var start = System.nanoTime();
                 var code = mainController.getInput().getText();
                 var className = findClassName(code);
+
                 if (currentChangeId == latestChangeId) { // if this thread is the latest thread
                     var strings = compileAndRunJavaCode(code, className);
                     var codeEvaluationTime = System.nanoTime() - start;
@@ -70,18 +76,38 @@ public class LiveJava extends Application {
                         }
                     });
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
+                Platform.runLater(() -> {
+                    mainController.getOutput().clear();
+                    mainController.getOutput().appendText("Error: " + e.getMessage() + "\n");
+                    errorCollector.getLines().forEach(line -> mainController.getOutput().appendText(line + "\n"));
+                });
+            } finally {
+                System.setOut(oldOut);
+                System.setErr(oldErr);
+                Platform.runLater(() -> {
+                    mainController.getOutput().setScrollTop(0);
+                    mainController.getOutput().selectRange(0, 0);
+                });
             }
         }).start();
     }
 
-    private List<String> compileAndRunJavaCode(String text, String className) throws IOException {
-        List<String> strings = new ArrayList<>();
+    private List<String> compileAndRunJavaCode(String text, String className) throws Exception {
+        // change stream into text collector
+        TextCollector textCollector = new TextCollector();
+        System.setOut(new PrintStream(textCollector));
         Files.write(Paths.get("./" + className + ".java"), text.getBytes());
-        runCommand("javac ./" + className + ".java", strings::add);
-        runCommand("java " + className, strings::add);
-        return strings;
+        SimpleCompiler sc = new SimpleCompiler("./" + className + ".java");
+        Class<?> aClass = sc.getClassLoader().loadClass(className);
+        var mainMethod = aClass.getMethod("main", String[].class);
+        mainMethod.invoke(null, (Object) null);
+
+// TODO: allow user to choose javac or janino with setting menu
+//        runCommand("javac ./" + className + ".java", strings::add);
+//        runCommand("java " + className, strings::add);
+        return new ArrayList<>(textCollector.getLines());
     }
 
     private String findClassName(String text) {
