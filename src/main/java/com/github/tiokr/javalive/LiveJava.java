@@ -26,7 +26,7 @@ public class LiveJava extends Application {
 
     private boolean readyToRun = false;
     private MainController mainController;
-    private int latestChangeId = 0;
+    private Thread activeThread = new Thread(() -> {});
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -52,11 +52,10 @@ public class LiveJava extends Application {
             return;
         }
 
-        latestChangeId++;
-        var currentChangeId = latestChangeId; // make sure only the last change updates the gui
         var oldOut = System.out;
         var oldErr = System.err;
-        new Thread(() -> {
+        activeThread.interrupt();
+        activeThread = new Thread(() -> {
             var errorCollector = new TextCollector();
             try {
                 System.setErr(new PrintStream(errorCollector));
@@ -64,18 +63,20 @@ public class LiveJava extends Application {
                 var code = mainController.getInput().getText();
                 var className = findClassName(code);
 
-                if (currentChangeId == latestChangeId) { // if this thread is the latest thread
-                    var strings = compileAndRunJavaCode(code, className);
-                    var codeEvaluationTime = System.nanoTime() - start;
-                    Platform.runLater(() -> { // update gui elements on the main thread
-                        if (currentChangeId == latestChangeId) { // if this was still called by the latest thread
-                            mainController.getRightStatus().setText("Took " + codeEvaluationTime / NANO_TO_MILLIS_RATIO + "ms");
-                            mainController.getOutput().clear();
-                            strings.forEach(string -> mainController.getOutput().appendText(string + "\n"));
-                            mainController.getLeftStatus().setText(className);
-                        }
-                    });
+                if (activeThread.isInterrupted()) {
+                    return;
                 }
+                var strings = compileAndRunJavaCode(code, className);
+                var codeEvaluationTime = System.nanoTime() - start;
+                Platform.runLater(() -> { // update gui elements on the main thread
+                    if (activeThread.isInterrupted()) {
+                        return;
+                    }
+                    mainController.getRightStatus().setText("Took " + codeEvaluationTime / NANO_TO_MILLIS_RATIO + "ms");
+                    mainController.getOutput().clear();
+                    strings.forEach(string -> mainController.getOutput().appendText(string + "\n"));
+                    mainController.getLeftStatus().setText(className);
+                });
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() -> {
@@ -91,7 +92,8 @@ public class LiveJava extends Application {
                     mainController.getOutput().selectRange(0, 0);
                 });
             }
-        }).start();
+        });
+        activeThread.start();
     }
 
     private List<String> compileAndRunJavaCode(String text, String className) throws Exception {
