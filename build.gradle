@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'org.github.tiokr'
-version '0.2'
+version '0.3'
 
 def currentOS = org.gradle.internal.os.OperatingSystem.current()
 def platform
@@ -33,7 +33,8 @@ dependencies {
     compile group: 'org.codehaus.janino', name: 'janino', version: '3.0.7'
     compile group: 'org.fxmisc.richtext', name: 'richtextfx', version: '0.10.6'
     compile group: 'org.fxmisc.wellbehaved', name: 'wellbehavedfx', version: '0.3.3'
-//    compile group: 'org.zeroturnaround', name: 'zt-process-killer', version: '1.10'
+    compile group: 'org.zeroturnaround', name: 'zt-process-killer', version: '1.10'
+    compile group: 'org.zeroturnaround', name: 'zt-exec', version: '1.12'
 }
 
 test {
@@ -62,6 +63,7 @@ task createProperties(dependsOn: processResources) {
         new File("$buildDir/resources/main/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
+            p['name'] = rootProject.name.toString()
             p.store w, null
         }
     }
