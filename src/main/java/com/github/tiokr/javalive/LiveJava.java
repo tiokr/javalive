@@ -6,20 +6,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.zeroturnaround.exec.stream.NullOutputStream;
 import org.zeroturnaround.process.PidProcess;
 import org.zeroturnaround.process.Processes;
 import org.zeroturnaround.process.WindowsProcess;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -30,15 +25,17 @@ public class LiveJava extends Application {
 
     private static LiveJava instance;
 
-    private final ConcurrentHashMap<Long, PidProcess> createdProcesses = new ConcurrentHashMap<>();
+    private final Map<Long, PidProcess> createdProcesses = new ConcurrentHashMap<>();
 
     private Thread activeThread = null;
     private boolean readyToRun = false;
     private MainController mainController;
     private Properties properties;
+    private static final PrintStream err = System.err;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        System.setErr(err);
         instance = this;
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource(MAIN_FXML)));
         String version = getProperties().getProperty("version");
@@ -49,6 +46,7 @@ public class LiveJava extends Application {
     }
 
     public static void main(String[] args) {
+        System.setErr(new PrintStream(new NullOutputStream())); // hide annoying javafx warnings on start
         launch();
     }
 
@@ -67,10 +65,12 @@ public class LiveJava extends Application {
         }
         activeThread = new Thread(() -> {
             try {
+                var toRemove = new HashSet<Long>();
                 for (PidProcess process : createdProcesses.values()) {
                     process.destroyForcefully();
+                    toRemove.add((long)process.getPid());
                 }
-                createdProcesses.clear();
+                toRemove.forEach(createdProcesses::remove);
 
                 var start = System.nanoTime();
                 var code = mainController.getInput().getText();
